@@ -41,6 +41,9 @@ INSTALLED_APPS = [
     "products.apps.ProductsConfig",
     "graphene_django",
 ]
+GRAPHENE = {
+    "SCHEMA": "products.schema.schema"
+}
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
