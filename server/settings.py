@@ -47,7 +47,7 @@ GRAPHENE = {
 }
 
 CORS_ALLOWED_ORIGINS = [
-    'http://localhost:5173',
+    'http://localhost:5173','https://develop--lustrous-seahorse-3ffd01.netlify.app'
 ]
 
 MIDDLEWARE = [
