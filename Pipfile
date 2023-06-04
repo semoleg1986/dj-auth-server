@@ -8,6 +8,7 @@ django = "*"
 graphene-django = "*"
 graphene = "*"
 django-cors-headers = "*"
+gunicorn = "*"
 
 [dev-packages]
 
