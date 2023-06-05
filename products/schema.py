@@ -45,6 +45,7 @@ class UpdateProduct(graphene.Mutation):
         description = graphene.String()
         price = graphene.Decimal()
         quantity = graphene.Int()
+        category_id = graphene.ID()
 
     product = graphene.Field(ProductType)
 
@@ -58,6 +59,9 @@ class UpdateProduct(graphene.Mutation):
             product.price = price
         if quantity is not None:
             product.quantity = quantity
+        if category_id is not None:
+            category = Category.objects.get(pk=category_id)
+            product.category = category
         product.save()
         return UpdateProduct(product=product)
 
