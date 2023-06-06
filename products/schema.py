@@ -20,6 +20,22 @@ class OrderType(DjangoObjectType):
     class Meta:
         model = Order
 
+    status = graphene.String()
+
+    def resolve_status(self, info):
+        # Map the status value to the translated string
+        status_map = {
+            'pending': 'В обработке',
+            'accepted': 'Заказ принят',
+            'prepare': 'Заказ готовиться',
+            'created': 'Заказ готов к выдаче',
+            'delivery': 'Передан курьеру',
+            'canceled': 'Отменен',
+            'completed': 'Выполнен',
+            'refunded': 'Возврат',
+        }
+        return status_map.get(self.status, self.status)
+        
 class Query(graphene.ObjectType):
     products = graphene.List(ProductType)
     categories = graphene.List(CategoryType)
