@@ -49,7 +49,7 @@ class UpdateProduct(graphene.Mutation):
 
     product = graphene.Field(ProductType)
 
-    def mutate(self, info, id, name=None, description=None, price=None, quantity=None):
+    def mutate(self, info, id, name=None, description=None, price=None, quantity=None, category_id=None):
         product = Product.objects.get(pk=id)
         if name is not None:
             product.name = name
