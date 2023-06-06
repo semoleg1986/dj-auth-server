@@ -53,7 +53,7 @@ class Order(models.Model):
     phone_number = models.CharField(max_length=20)
     address = models.TextField()
     email = models.EmailField(validators=[EmailValidator()], blank=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     update_date = models.DateTimeField(auto_now=True)
     products = models.ManyToManyField(Product, through='OrderItem')
     created_at = models.DateTimeField(auto_now_add=True)
