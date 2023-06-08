@@ -1,3 +1,4 @@
+from django.contrib.auth import authenticate, login
 import graphene
 from graphene_django import DjangoObjectType
 from .models import Seller, Buyer, Product, Category, Order, OrderItem, User
