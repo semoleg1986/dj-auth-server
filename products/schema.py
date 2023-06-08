@@ -51,13 +51,14 @@ class OrderType(DjangoObjectType):
         return status_map.get(self.status, self.status)
 
 class Query(graphene.ObjectType):
-    user = graphene.List(UserType)
+    users = graphene.List(UserType)
     sellers = graphene.List(SellerType)
     buyers = graphene.List(BuyerType)
     products = graphene.List(ProductType)
     categories = graphene.List(CategoryType)
     orders = graphene.List(OrderType)
-
+    def resolve_sellers(self, info):
+        return User.objects.all()
     def resolve_sellers(self, info):
         return Seller.objects.all()
     def resolve_buyers(self, info):
