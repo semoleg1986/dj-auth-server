@@ -9,6 +9,8 @@ graphene-django = "*"
 graphene = "*"
 django-cors-headers = "*"
 gunicorn = "*"
+whitenoise = "*"
+django-on-heroku = "*"
 
 [dev-packages]
 

@@ -1,6 +1,20 @@
 import graphene
 from graphene_django import DjangoObjectType
-from .models import Product, Category, Order, OrderItem
+from .models import Seller, Buyer, Product, Category, Order, OrderItem, User
+
+class UserType(DjangoObjectType):
+    class Meta:
+        model = User
+        fields = "__all__"
+
+
+class SellerType(DjangoObjectType):
+    class Meta:
+        model = Seller
+
+class BuyerType(DjangoObjectType):
+    class Meta:
+        model = Buyer
 
 class CategoryType(DjangoObjectType):
     class Meta:
@@ -35,18 +49,126 @@ class OrderType(DjangoObjectType):
             'refunded': 'Возврат',
         }
         return status_map.get(self.status, self.status)
-        
+
 class Query(graphene.ObjectType):
+    sellers = graphene.List(SellerType)
+    buyers = graphene.List(BuyerType)
     products = graphene.List(ProductType)
     categories = graphene.List(CategoryType)
     orders = graphene.List(OrderType)
 
+    def resolve_sellers(self, info):
+        return Seller.objects.all()
+    def resolve_buyers(self, info):
+        return Buyer.objects.all()
     def resolve_products(self, info):
         return Product.objects.all()
     def resolve_categories(self, info):
         return Category.objects.all()
     def resolve_orders(self, info):
         return Order.objects.all()
+class CreateUser(graphene.Mutation):
+    user = graphene.Field(UserType)
+
+    class Arguments:
+        username = graphene.String(required=True)
+        # Добавьте другие поля пользователя, если необходимо
+
+    def mutate(self, info, username):
+        user = User(username=username)
+        user.save()
+        return CreateUser(user=user)
+
+class DeleteUser(graphene.Mutation):
+    class Arguments:
+        user_id = graphene.ID(required=True)
+
+    success = graphene.Boolean()
+
+    def mutate(self, info, user_id):
+        try:
+            user = User.objects.get(id=user_id)
+            user.delete()
+            success = True
+        except User.DoesNotExist:
+            success = False
+
+        return DeleteUser(success=success)
+
+class CreateSeller(graphene.Mutation):
+    seller = graphene.Field(SellerType)
+
+    class Arguments:
+        user_id = graphene.Int(required=True)
+        phone_number = graphene.String(required=True)
+        company_name = graphene.String(required=True)
+        description = graphene.String(required=True)
+
+    def mutate(self, info, user_id, phone_number, company_name, description):
+        user = User.objects.get(id=user_id)
+        seller = Seller(user=user, phone_number=phone_number, company_name=company_name, description=description)
+        seller.save()
+        return CreateSeller(seller=seller)
+
+class UpdateBuyer(graphene.Mutation):
+    class Arguments:
+        buyer_id = graphene.ID(required=True)
+        phone_number = graphene.String()
+        name = graphene.String()
+        surname = graphene.String()
+        address = graphene.String()
+        email = graphene.String()
+
+    buyer = graphene.Field(BuyerType)
+
+    def mutate(self, info, buyer_id, **kwargs):
+        try:
+            buyer = Buyer.objects.get(id=buyer_id)
+            for key, value in kwargs.items():
+                setattr(buyer, key, value)
+            buyer.save()
+        except Buyer.DoesNotExist:
+            buyer = None
+
+        return UpdateBuyer(buyer=buyer)
+
+
+class CreateBuyer(graphene.Mutation):
+    buyer = graphene.Field(BuyerType)
+
+    class Arguments:
+        user_id = graphene.Int(required=True)
+        phone_number = graphene.String(required=True)
+        name = graphene.String(required=True)
+        surname = graphene.String(required=True)
+        address = graphene.String(required=True)
+        email = graphene.String(required=True)
+
+    def mutate(self, info, user_id, phone_number, name, surname, address, email):
+        user = User.objects.get(id=user_id)
+        buyer = Buyer(user=user, phone_number=phone_number, name=name, surname=surname, address=address, email=email)
+        buyer.save()
+        return CreateBuyer(buyer=buyer)
+
+class UpdateSeller(graphene.Mutation):
+    class Arguments:
+        seller_id = graphene.ID(required=True)
+        phone_number = graphene.String()
+        company_name = graphene.String()
+        description = graphene.String()
+
+    seller = graphene.Field(SellerType)
+
+    def mutate(self, info, seller_id, **kwargs):
+        try:
+            seller = Seller.objects.get(id=seller_id)
+            for key, value in kwargs.items():
+                setattr(seller, key, value)
+            seller.save()
+        except Seller.DoesNotExist:
+            seller = None
+
+        return UpdateSeller(seller=seller)
 
 class CreateProduct(graphene.Mutation):
     class Arguments:
@@ -55,12 +177,14 @@ class CreateProduct(graphene.Mutation):
         price = graphene.Decimal(required=True)
         quantity = graphene.Int(required=True)
         category_id = graphene.ID(required=True)
+        seller_id = graphene.ID(required=True)  # Добавленное поле seller_id
 
     product = graphene.Field(ProductType)
 
-    def mutate(self, info, name, description, price, quantity, category_id):
+    def mutate(self, info, name, description, price, quantity, category_id, seller_id):
         category = Category.objects.get(pk=category_id)
-        product = Product(name=name, description=description, price=price, quantity=quantity, category=category)
+        seller = Seller.objects.get(pk=seller_id)  # Получение объекта продавца по seller_id
+        product = Product(name=name, description=description, price=price, quantity=quantity, category=category, seller=seller)  # Установка связи продавца
         product.save()
         return CreateProduct(product=product)
 
@@ -200,5 +324,11 @@ class Mutation(graphene.ObjectType):
     delete_category = DeleteCategory.Field()
     create_order = CreateOrder.Field()
     update_order = UpdateOrder.Field()
+    create_user = CreateUser.Field()
+    delete_user = DeleteUser.Field()
+    create_seller = CreateSeller.Field()
+    update_seller = UpdateSeller.Field()
+    create_buyer = CreateBuyer.Field()
+    update_buyer = UpdateBuyer.Field()
 
 schema = graphene.Schema(query=Query, mutation=Mutation)
