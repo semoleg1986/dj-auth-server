@@ -11,6 +11,7 @@ django-cors-headers = "*"
 gunicorn = "*"
 whitenoise = "*"
 django-on-heroku = "*"
+django-graphql-jwt = "*"
 
 [dev-packages]
 
