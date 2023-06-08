@@ -81,6 +81,26 @@ class CreateUser(graphene.Mutation):
         user.save()
         return CreateUser(user=user)
 
+class LoginUser(graphene.Mutation):
+    class Arguments:
+        username = String(required=True)
+        password = String(required=True)
+
+    token = String()
+    user = ObjectType('UserType')
+
+    @staticmethod
+    def mutate(root, info, username, password):
+        user = authenticate(username=username, password=password)
+
+        if user is None or not user.is_active:
+            raise Exception('Invalid credentials')
+
+        login(info.context, user)
+        token = get_token(user)
+
+        return LoginUser(token=token, user=user)
+
 class DeleteUser(graphene.Mutation):
     class Arguments:
         user_id = graphene.ID(required=True)
@@ -327,6 +347,7 @@ class Mutation(graphene.ObjectType):
     create_order = CreateOrder.Field()
     update_order = UpdateOrder.Field()
     create_user = CreateUser.Field()
+    login_user = LoginUser.Field()
     delete_user = DeleteUser.Field()
     create_seller = CreateSeller.Field()
     update_seller = UpdateSeller.Field()
