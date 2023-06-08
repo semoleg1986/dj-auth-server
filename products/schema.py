@@ -1,7 +1,6 @@
 import graphene
 from graphene_django import DjangoObjectType
 from .models import Seller, Buyer, Product, Category, Order, OrderItem, User
-from django.contrib.auth import authenticate, login
 from graphql_jwt.shortcuts import get_token
 
 class UserType(DjangoObjectType):
@@ -76,10 +75,12 @@ class CreateUser(graphene.Mutation):
 
     class Arguments:
         username = graphene.String(required=True)
-        # Добавьте другие поля пользователя, если необходимо
+        email = graphene.String(required=True)
+        password = graphene.String(required=True)
 
-    def mutate(self, info, username):
-        user = User(username=username)
+    def mutate(self, info, username, email, password):
+        user = User(username=username, email=email)
+        user.set_password(password)  # Установка пароля
         user.save()
         return CreateUser(user=user)
 
@@ -89,7 +90,7 @@ class LoginUser(graphene.Mutation):
         password = graphene.String(required=True)
 
     token = graphene.String()
-    user = graphene.ObjectType('UserType')
+    user = graphene.Field(UserType)
 
     @staticmethod
     def mutate(root, info, username, password):
