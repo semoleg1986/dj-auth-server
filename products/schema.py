@@ -125,7 +125,7 @@ class CreateSeller(graphene.Mutation):
     seller = graphene.Field(SellerType)
 
     class Arguments:
-        user_id = graphene.Int(required=True)
+        user_id = graphene.ID(required=True)
         phone_number = graphene.String(required=True)
         company_name = graphene.String(required=True)
         description = graphene.String(required=True)
@@ -163,7 +163,7 @@ class CreateBuyer(graphene.Mutation):
     buyer = graphene.Field(BuyerType)
 
     class Arguments:
-        user_id = graphene.Int(required=True)
+        user_id = graphene.ID(required=True)
         phone_number = graphene.String(required=True)
         name = graphene.String(required=True)
         surname = graphene.String(required=True)
