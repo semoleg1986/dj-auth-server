@@ -59,6 +59,9 @@ class Query(graphene.ObjectType):
     products = graphene.List(ProductType)
     categories = graphene.List(CategoryType)
     orders = graphene.List(OrderType)
+    products_by_seller_id = graphene.List(ProductType, seller_id=graphene.ID(required=True))
+    def resolve_products_by_seller_id(self, info, seller_id):
+        return Product.objects.filter(seller__id=seller_id)
     def resolve_users(self, info):
         return User.objects.all()
     def resolve_sellers(self, info):
