@@ -54,7 +54,7 @@ GRAPHENE = {
 }
 
 CORS_ALLOWED_ORIGINS = [
-    'http://localhost:5173','https://seller--lustrous-seahorse-3ffd01.netlify.app/signin','https://master--lambent-pasca-9cfa0c.netlify.app'
+    'http://localhost:5173','http://localhost:5174','https://seller--lustrous-seahorse-3ffd01.netlify.app','https://master--lambent-pasca-9cfa0c.netlify.app'
 ]
 
 MIDDLEWARE = [
