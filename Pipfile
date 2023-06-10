@@ -12,6 +12,7 @@ gunicorn = "*"
 whitenoise = "*"
 django-on-heroku = "*"
 django-graphql-jwt = "*"
+psycopg2 = "*"
 
 [dev-packages]
 
