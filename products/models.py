@@ -32,7 +32,6 @@ class Buyer(models.Model):
     name = models.CharField(max_length=100)
     surname = models.CharField(max_length=100)
     address = models.TextField()
-    email = models.EmailField()
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 

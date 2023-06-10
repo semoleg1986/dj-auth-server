@@ -146,7 +146,6 @@ class UpdateBuyer(graphene.Mutation):
         name = graphene.String()
         surname = graphene.String()
         address = graphene.String()
-        email = graphene.String()
 
     buyer = graphene.Field(BuyerType)
 
@@ -171,11 +170,10 @@ class CreateBuyer(graphene.Mutation):
         name = graphene.String(required=True)
         surname = graphene.String(required=True)
         address = graphene.String(required=True)
-        email = graphene.String(required=True)
 
-    def mutate(self, info, user_id, phone_number, name, surname, address, email):
+    def mutate(self, info, user_id, phone_number, name, surname, address):
         user = User.objects.get(id=user_id)
-        buyer = Buyer(user=user, phone_number=phone_number, name=name, surname=surname, address=address, email=email)
+        buyer = Buyer(user=user, phone_number=phone_number, name=name, surname=surname, address=address)
         buyer.save()
         return CreateBuyer(buyer=buyer)
 
