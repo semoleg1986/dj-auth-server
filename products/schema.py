@@ -308,6 +308,8 @@ class DeleteCategory(graphene.Mutation):
         return DeleteCategory(success=True)
 class CreateOrder(graphene.Mutation):
     class Arguments:
+        seller_id = graphene.ID(required=True)
+        buyer_id = graphene.ID(required=True)
         name = graphene.String(required=True)
         surname = graphene.String(required=True)
         phone_number = graphene.String(required=True)
@@ -316,15 +318,20 @@ class CreateOrder(graphene.Mutation):
         product_ids = graphene.List(graphene.ID, required=True)
         quantities = graphene.List(graphene.Int, required=True)
 
+
     order = graphene.Field(OrderType)
 
-    def mutate(self, info, name, surname, phone_number, address, email, product_ids, quantities):
+    def mutate(self, info, seller_id, buyer_id, name, surname, phone_number, address, email, product_ids, quantities):
+        seller = Seller.objects.get(pk=seller_id)
+        buyer = Buyer.objects.get(pk=buyer_id)
         order = Order(
             name=name,
             surname=surname,
             phone_number=phone_number,
             address=address,
             email=email,
+            seller=seller,
+            buyer=buyer,
         )
         order.save()
 
