@@ -56,12 +56,31 @@ class Query(graphene.ObjectType):
     users = graphene.List(UserType)
     sellers = graphene.List(SellerType)
     buyers = graphene.List(BuyerType)
+    buyer_by_id = graphene.Field(BuyerType, buyer_id=graphene.ID(required=True))
     products = graphene.List(ProductType)
     categories = graphene.List(CategoryType)
     orders = graphene.List(OrderType)
+    orders_by_buyer_id = graphene.List(OrderType, buyer_id=graphene.ID(required=True))
+    orders_by_seller_id = graphene.List(OrderType, seller_id=graphene.ID(required=True))
     products_by_seller_id = graphene.List(ProductType, seller_id=graphene.ID(required=True))
     def resolve_products_by_seller_id(self, info, seller_id):
         return Product.objects.filter(seller__id=seller_id)
+    def resolve_buyer_by_id(self, info, buyer_id):
+        try:
+            return Buyer.objects.get(pk=buyer_id)
+        except Buyer.DoesNotExist:
+            return None
+    def resolve_orders_by_buyer_id(self, info, buyer_id):
+        try:
+            return Order.objects.filter(buyer_id=buyer_id)
+        except Order.DoesNotExist:
+            return None
+    def resolve_orders_by_seller_id(self, info, seller_id):
+        try:
+            return Order.objects.filter(seller_id=seller_id)
+        except Order.DoesNotExist:
+            return None
+
     def resolve_users(self, info):
         return User.objects.all()
     def resolve_sellers(self, info):
