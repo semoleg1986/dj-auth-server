@@ -71,7 +71,10 @@ class Query(graphene.ObjectType):
 
     orders_by_seller_id = graphene.List(OrderType, seller_id=graphene.ID(required=True))
 
+    statuses = graphene.List(graphene.String)
 
+    def resolve_statuses(self, info):
+        return ['pending', 'accepted','prepare', 'created', 'delivery', 'canceled', 'completed', 'refunded',]
     def resolve_products_by_seller_id(self, info, seller_id):
         return Product.objects.filter(seller__id=seller_id)
     def resolve_buyer_by_id(self, info, buyer_id):
