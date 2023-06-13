@@ -39,7 +39,6 @@ class OrderType(DjangoObjectType):
     status = graphene.String()
 
     def resolve_status(self, info):
-        # Map the status value to the translated string
         status_map = {
             'pending': 'В обработке',
             'accepted': 'Заказ принят',
@@ -54,15 +53,25 @@ class OrderType(DjangoObjectType):
 
 class Query(graphene.ObjectType):
     users = graphene.List(UserType)
+
     sellers = graphene.List(SellerType)
+
     buyers = graphene.List(BuyerType)
     buyer_by_id = graphene.Field(BuyerType, buyer_id=graphene.ID(required=True))
+
     products = graphene.List(ProductType)
-    categories = graphene.List(CategoryType)
-    orders = graphene.List(OrderType)
-    orders_by_buyer_id = graphene.List(OrderType, buyer_id=graphene.ID(required=True))
-    orders_by_seller_id = graphene.List(OrderType, seller_id=graphene.ID(required=True))
     products_by_seller_id = graphene.List(ProductType, seller_id=graphene.ID(required=True))
+
+    categories = graphene.List(CategoryType)
+
+    orders = graphene.List(OrderType)
+    orders_by_buyer_id = graphene.List(OrderType,
+    buyer_id=graphene.ID(required=True))
+    orders_by_status = graphene.List(OrderType, status=graphene.String(required=True))
+
+    orders_by_seller_id = graphene.List(OrderType, seller_id=graphene.ID(required=True))
+
+
     def resolve_products_by_seller_id(self, info, seller_id):
         return Product.objects.filter(seller__id=seller_id)
     def resolve_buyer_by_id(self, info, buyer_id):
@@ -75,6 +84,8 @@ class Query(graphene.ObjectType):
             return Order.objects.filter(buyer_id=buyer_id)
         except Order.DoesNotExist:
             return None
+    def resolve_orders_by_status(self, info, status):
+        return Order.objects.filter(status=status)
     def resolve_orders_by_seller_id(self, info, seller_id):
         try:
             return Order.objects.filter(seller_id=seller_id)
@@ -377,6 +388,7 @@ class Mutation(graphene.ObjectType):
     delete_category = DeleteCategory.Field()
     create_order = CreateOrder.Field()
     update_order = UpdateOrder.Field()
+    update_order_status = graphene.Field(OrderType, order_id=graphene.ID(required=True), status=graphene.String(required=True))
     create_user = CreateUser.Field()
     login_user = LoginUser.Field()
     delete_user = DeleteUser.Field()
@@ -384,5 +396,14 @@ class Mutation(graphene.ObjectType):
     update_seller = UpdateSeller.Field()
     create_buyer = CreateBuyer.Field()
     update_buyer = UpdateBuyer.Field()
+
+    def resolve_update_order_status(self, info, order_id, status):
+        try:
+            order = Order.objects.get(pk=order_id)
+            order.status = status
+            order.save()
+            return order
+        except Order.DoesNotExist:
+            return  Exception("Order not found")
 
 schema = graphene.Schema(query=Query, mutation=Mutation)
