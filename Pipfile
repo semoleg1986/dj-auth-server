@@ -13,6 +13,7 @@ whitenoise = "*"
 django-on-heroku = "*"
 django-graphql-jwt = "*"
 psycopg2 = "*"
+daphne = "*"
 
 [dev-packages]
 
