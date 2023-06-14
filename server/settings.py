@@ -53,6 +53,8 @@ GRAPHENE = {
     "SCHEMA": "products.schema.schema"
 }
 
+ASGI_APPLICATION = 'server.asgi.application'
+
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173','http://localhost:5174','https://seller--lustrous-seahorse-3ffd01.netlify.app','https://master--lambent-pasca-9cfa0c.netlify.app'
 ]
