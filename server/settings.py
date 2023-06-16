@@ -40,10 +40,10 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
-    'whitenoise.runserver_nostatic',
-    'graphql_jwt',
+    "whitenoise.runserver_nostatic",
+    "graphql_jwt",
     "django.contrib.staticfiles",
-    'corsheaders',
+    "corsheaders",
     "products.apps.ProductsConfig",
     "graphene_django",
 ]

@@ -4,6 +4,7 @@ from graphene_django import DjangoObjectType
 from .models import Seller, Buyer, Product, Category, Order, OrderItem, User
 from graphql_jwt.shortcuts import get_token
 
+
 class UserType(DjangoObjectType):
     class Meta:
         model = User
@@ -107,6 +108,8 @@ class Query(graphene.ObjectType):
         return Category.objects.all()
     def resolve_orders(self, info):
         return Order.objects.all()
+
+
 class CreateUser(graphene.Mutation):
     user = graphene.Field(UserType)
 
