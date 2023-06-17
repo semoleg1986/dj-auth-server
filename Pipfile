@@ -16,6 +16,7 @@ psycopg2 = "*"
 daphne = "*"
 django-channels-graphql-ws = "*"
 channels = "*"
+uvicorn = "*"
 
 [dev-packages]
 

@@ -45,9 +45,9 @@ INSTALLED_APPS = [
     "graphql_jwt",
     "django.contrib.staticfiles",
     "corsheaders",
-    "products.apps.ProductsConfig",
     "graphene_django",
     "channels",
+    "products.apps.ProductsConfig",
 ]
 
 AUTH_USER_MODEL = 'products.User'
