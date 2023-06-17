@@ -41,11 +41,11 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "whitenoise.runserver_nostatic",
-    "graphql_jwt",
     "django.contrib.staticfiles",
+    "strawberry_jwt_auth",
     "corsheaders",
     "products.apps.ProductsConfig",
-    "graphene_django",
+    "strawberry.django",
 ]
 
 AUTH_USER_MODEL = 'products.User'
@@ -130,7 +130,7 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",},
 ]
 
-
+AUTHENTICATION_BACKENDS = ['strawberry_jwt_auth.utils.authentication.AuthenticationBackend']
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
 
@@ -141,7 +141,6 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/

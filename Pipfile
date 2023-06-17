@@ -5,15 +5,17 @@ name = "pypi"
 
 [packages]
 django = "*"
-graphene-django = "*"
-graphene = "*"
 django-cors-headers = "*"
 gunicorn = "*"
 whitenoise = "*"
 django-on-heroku = "*"
-django-graphql-jwt = "*"
 psycopg2 = "*"
 daphne = "*"
+asgiref = "*"
+strawberry-graphql = {extras = ["debug-server"], version = "*"}
+strawberry-jwt-auth = "*"
+django-graphql-jwt = "*"
+graphene = "*"
 
 [dev-packages]
 
