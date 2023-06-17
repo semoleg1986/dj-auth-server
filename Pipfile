@@ -14,6 +14,8 @@ django-on-heroku = "*"
 django-graphql-jwt = "*"
 psycopg2 = "*"
 daphne = "*"
+django-channels-graphql-ws = "*"
+channels = "*"
 
 [dev-packages]
 

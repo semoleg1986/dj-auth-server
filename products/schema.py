@@ -3,6 +3,8 @@ import graphene
 from graphene_django import DjangoObjectType
 from .models import Seller, Buyer, Product, Category, Order, OrderItem, User
 from graphql_jwt.shortcuts import get_token
+import channels_graphql_ws
+import channels
 
 
 class UserType(DjangoObjectType):
@@ -51,6 +53,12 @@ class OrderType(DjangoObjectType):
             'refunded': 'Возврат',
         }
         return status_map.get(self.status, self.status)
+
+def get_orders_by_seller_id(seller_id):
+    # Получаем все заказы, связанные с данным идентификатором продавца
+    orders = Order.objects.filter(seller_id=seller_id)
+
+    return orders
 
 class Query(graphene.ObjectType):
     users = graphene.List(UserType)
@@ -109,17 +117,52 @@ class Query(graphene.ObjectType):
     def resolve_orders(self, info):
         return Order.objects.all()
 
+class OrderSubscription(channels_graphql_ws.Subscription):
+    class Arguments:
+        seller_id = graphene.ID(required=True)
+
+    order_status = graphene.String()
+
+    def subscribe(self, info, seller_id):
+        # Проверяем, аутентифицирован ли пользователь и является ли он продавцом с указанным идентификатором
+        user = info.context.user
+        if user.is_authenticated and user.is_seller and user.id == int(seller_id):
+            # Создание уникальной группы каналов для данного продавца
+            group_name = f'seller_{user.id}'
+            self.groups.append(group_name)
+            return [group_name]
+        return None
+
+    def publish(self, info, seller_id, payload):
+        # Извлечение данных из payload
+        order_id = payload.get('order_id')
+        new_status = payload.get('new_status')
+
+        # Отправка уведомления продавцу
+        group_name = f'seller_{info.context.user.id}'
+        self.broadcast(group_name,payload={
+            'order_id': order_id,
+            'new_status': new_status,
+        })
+
+    def unsubscribe(self, info, seller_id):
+        # Проверяем, аутентифицирован ли пользователь и является ли он продавцом с указанным идентификатором
+        user = info.context.user
+        if user.is_authenticated and user.is_seller and user.id == int(seller_id):
+            group_name = f'seller_{user.id}'
+            self.groups.remove(group_name)
+            return True
+        return False
 
 class CreateUser(graphene.Mutation):
     user = graphene.Field(UserType)
 
     class Arguments:
         username = graphene.String(required=True)
-        email = graphene.String(required=True)
         password = graphene.String(required=True)
 
-    def mutate(self, info, username, email, password):
-        user = User(username=username, email=email)
+    def mutate(self, info, username, password):
+        user = User(username=username)
         user.set_password(password)  # Установка пароля
         user.save()
         return CreateUser(user=user)
@@ -205,11 +248,10 @@ class CreateBuyer(graphene.Mutation):
         phone_number = graphene.String(required=True)
         name = graphene.String(required=True)
         surname = graphene.String(required=True)
-        address = graphene.String(required=True)
 
-    def mutate(self, info, user_id, phone_number, name, surname, address):
+    def mutate(self, info, user_id, phone_number, name, surname):
         user = User.objects.get(id=user_id)
-        buyer = Buyer(user=user, phone_number=phone_number, name=name, surname=surname, address=address)
+        buyer = Buyer(user=user, phone_number=phone_number, name=name, surname=surname)
         buyer.save()
         return CreateBuyer(buyer=buyer)
 
@@ -323,6 +365,7 @@ class DeleteCategory(graphene.Mutation):
         category = Category.objects.get(pk=id)
         category.delete()
         return DeleteCategory(success=True)
+
 class CreateOrder(graphene.Mutation):
     class Arguments:
         seller_id = graphene.ID(required=True)
@@ -334,7 +377,6 @@ class CreateOrder(graphene.Mutation):
         email = graphene.String(required=True)
         product_ids = graphene.List(graphene.ID, required=True)
         quantities = graphene.List(graphene.Int, required=True)
-
 
     order = graphene.Field(OrderType)
 
@@ -356,6 +398,12 @@ class CreateOrder(graphene.Mutation):
             product = Product.objects.get(pk=product_id)
             order_item = OrderItem(order=order, product=product, quantity=quantity)
             order_item.save()
+
+        OrderSubscription.broadcast(payload = {
+            'order_id': str(order.id),
+            'new_status': order.status,
+        })
+        # OrderSubscription.broadcast(payload=payload)
 
         return CreateOrder(order=order)
 
@@ -412,4 +460,29 @@ class Mutation(graphene.ObjectType):
         except Order.DoesNotExist:
             return  Exception("Order not found")
 
-schema = graphene.Schema(query=Query, mutation=Mutation)
+
+
+
+class Subscription(graphene.ObjectType):
+    order_updates = OrderSubscription.Field()
+
+schema = graphene.Schema(query=Query, mutation=Mutation, subscription=Subscription)
+
+def demo_middleware(next_middleware, root, info, *args, **kwds):
+    if (
+        info.operation.name is not None
+        and info.operation.name.value != "IntrospectionQuery"
+    ):
+        print("Demo middleware report")
+        print("    operation :", info.operation.operation)
+        print("    name      :", info.operation.name.value)
+
+    # Invoke next middleware.
+    result = next_middleware(root, info, *args, **kwds)
+    return result
+
+class MyGraphqlWsConsumer(channels_graphql_ws.GraphqlWsConsumer):
+    async def on_connect(self, payload):
+        self.scope["user"] = await channels.auth.get_user(self.scope)
+    schema = schema
+    middleware = [demo_middleware]

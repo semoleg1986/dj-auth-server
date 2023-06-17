@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+from channels.auth import AuthMiddlewareStack
 import django_on_heroku
 
 import os
@@ -46,15 +47,18 @@ INSTALLED_APPS = [
     "corsheaders",
     "products.apps.ProductsConfig",
     "graphene_django",
+    "channels",
 ]
 
 AUTH_USER_MODEL = 'products.User'
+
+ASGI_APPLICATION = 'server.asgi.application'
 
 GRAPHENE = {
     "SCHEMA": "products.schema.schema"
 }
 
-ASGI_APPLICATION = 'server.asgi.application'
+
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173','http://localhost:5174','https://seller--lustrous-seahorse-3ffd01.netlify.app','https://master--lambent-pasca-9cfa0c.netlify.app'
@@ -89,8 +93,10 @@ TEMPLATES = [
         },
     },
 ]
+# ASGI_APPLICATION = 'server.router.application'
 
-WSGI_APPLICATION = "server.wsgi.application"
+
+# WSGI_APPLICATION = "server.wsgi.application"
 
 
 # Database
@@ -110,6 +116,12 @@ DATABASES = {
         'PASSWORD': '0uX4Ovrj78fOi9OarTyCHtCAzbdGTtHB',
         'HOST': 'mel.db.elephantsql.com',
         'PORT': '5432',
+    }
+}
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
     }
 }
 
