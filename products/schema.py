@@ -1,10 +1,13 @@
 import strawberry
+from datetime import datetime
 from django.contrib.auth import authenticate, login
 from typing import List
 from .models import Seller, Buyer, Category, Product, Order, OrderItem, User
 from strawberry_jwt_auth.extension import JWTExtension
 from graphql_jwt.shortcuts import get_token
-from .logic import get_seller_by_id, get_category_by_id
+from .logic import get_seller_by_id, get_category_by_id, get_buyer_by_id, get_product_by_id,get_orders_by_seller_id
+import asyncio
+
 
 @strawberry.type
 class UserType:
@@ -39,6 +42,7 @@ class BuyerType:
 
 @strawberry.type
 class CategoryType:
+    id: strawberry.ID
     name: str
 
 @strawberry.type
@@ -55,12 +59,13 @@ class ProductType:
 
 @strawberry.type
 class OrderItemType:
-    order: "OrderType"
+    id: strawberry.ID
     product: ProductType
     quantity: int
 
 @strawberry.type
 class OrderType:
+    id: strawberry.ID
     buyer: BuyerType
     seller: SellerType
     order_number: str
@@ -142,6 +147,20 @@ class Query:
     def orders_by_seller_id(self, seller: strawberry.ID) -> List[OrderType]:
         return Order.objects.filter(seller=seller)
 
+@strawberry.subscription
+async def order_seller_subscription(seller_id: strawberry.ID) -> OrderType:
+    # Создаем асинхронный генератор, который будет посылать обновления о заказах продавца
+    while True:
+        # Получаем список заказов продавца по его идентификатору
+        orders = get_orders_by_seller_id(seller_id)
+
+        # Отправляем каждый заказ в качестве обновления подписчику
+        for order in orders:
+            yield order
+
+        # Ждем некоторое время перед отправкой следующих обновлений
+        await asyncio.sleep(5)  # Например, отправляем обновления каждые 5 секунд
+
 @strawberry.type
 class Mutation:
     @strawberry.mutation
@@ -203,7 +222,6 @@ class Mutation:
         quantity: int,
         category_id: strawberry.ID
     ) -> ProductType:
-        # Создание нового продукта
         seller = get_seller_by_id(seller_id)
         category = get_category_by_id(category_id)
         product = Product(
@@ -214,9 +232,7 @@ class Mutation:
             quantity=quantity,
             category=category
         )
-        return product
-
-        # Возвращение созданного продукта
+        product.save()
         return ProductType(
             id=str(product.id),
             seller=seller,
@@ -224,19 +240,141 @@ class Mutation:
             description=product.description,
             price=product.price,
             quantity=product.quantity,
+            created_at=str(product.created_at),
+            updated_at=str(product.updated_at),
             category=category
         )
+
+    @strawberry.mutation
+    def update_product(info, id: strawberry.ID, name: str, description: str, price: float, quantity: int, category_id: strawberry.ID) -> ProductType:
+        try:
+            product = Product.objects.get(id=id)
+        except Product.DoesNotExist:
+            raise Exception("Продукт с указанным идентификатором не найден.")
+        product.name = name
+        product.description = description
+        product.price = price
+        product.quantity = quantity
+        product.category = get_category_by_id(category_id)
+        product.updated_at = datetime.now()
+        product.save()
+        return ProductType(
+            id=str(product.id),
+            seller=product.seller,
+            name=product.name,
+            description=product.description,
+            price=product.price,
+            quantity=product.quantity,
+            created_at=str(product.created_at),
+            updated_at=str(product.updated_at),
+            category=product.category
+        )
+    @strawberry.mutation
+    def delete_product(info, id: strawberry.ID) -> bool:
+        try:
+            product = Product.objects.get(id=id)
+        except Product.DoesNotExist:
+            raise Exception("Продукт с указанным идентификатором не найден.")
+        product.delete()
+        return True
     @strawberry.mutation
     def create_category(info, name: str) -> CategoryType:
-        # Создание новой категории
         category = Category(
             name=name,
         )
         category.save()
         return CategoryType(
+            id=category.id,
             name=category.name,
         )
 
-schema = strawberry.Schema(query=Query, mutation=Mutation, extensions = [
+    @strawberry.mutation
+    def update_category(info, id: strawberry.ID, name: str) -> CategoryType:
+        try:
+            category = Category.objects.get(id=id)
+        except Category.DoesNotExist:
+            raise Exception("Категория с указанным идентификатором не найдена.")
+        category.name = name
+        category.save()
+        return CategoryType(
+            id=str(category.id),
+            name=category.name,
+        )
+    @strawberry.mutation
+    def delete_category(info, id: strawberry.ID) -> bool:
+        try:
+            category = Category.objects.get(id=id)
+        except Category.DoesNotExist:
+            raise Exception("Продукт с указанным идентификатором не найден.")
+        category.delete()
+        return True
+
+    @strawberry.mutation
+    def create_order(
+        info,
+        buyer_id: strawberry.ID,
+        seller_id: strawberry.ID,
+        name: str,
+        surname: str,
+        phone_number: str,
+        address: str,
+        email: str,
+        products: List[strawberry.ID],
+        quantities: List[int],
+    ) -> OrderType:
+        # Получение объектов покупателя и продавца по их идентификаторам
+        buyer = get_buyer_by_id(buyer_id)
+        seller = get_seller_by_id(seller_id)
+
+        # Создание нового заказа
+        order = Order(
+            buyer=buyer,
+            seller=seller,
+            name=name,
+            surname=surname,
+            phone_number=phone_number,
+            address=address,
+            email=email,
+        )
+        order.save()
+
+        # Добавление продуктов к заказу
+        for product_id, quantity in zip(products, quantities):
+            product = get_product_by_id(product_id)
+            OrderItem.objects.create(order=order, product=product, quantity=quantity)
+
+        # Возвращение созданного заказа
+        return OrderType(
+            id=str(order.id),
+            buyer=buyer,
+            seller=seller,
+            order_number=str(order.order_number),
+            receipt_number=order.receipt_number,
+            name=order.name,
+            surname=order.surname,
+            phone_number=order.phone_number,
+            address=order.address,
+            email=order.email,
+            status=order.status,
+            update_date=str(order.update_date),
+            created_at=str(order.created_at),
+            products=[
+                OrderItemType(
+                    id=str(item.id),
+                    product=item.product,
+                    quantity=item.quantity,
+                )
+                for item in order.orderitem_set.all()
+            ],
+        )
+
+@strawberry.type
+class Subscription:
+    order_seller = order_seller_subscription
+
+
+
+
+schema = strawberry.Schema(query=Query, mutation=Mutation, subscription=Subscription, extensions = [
         JWTExtension,
     ])

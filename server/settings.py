@@ -130,7 +130,13 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",},
 ]
 
-AUTHENTICATION_BACKENDS = ['strawberry_jwt_auth.utils.authentication.AuthenticationBackend']
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
+}
+#
+# AUTHENTICATION_BACKENDS = ['strawberry_jwt_auth.utils.authentication.AuthenticationBackend']
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
 
