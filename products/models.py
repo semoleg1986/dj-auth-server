@@ -10,6 +10,7 @@ import string
 
 class User(AbstractUser):
     created_at = models.DateTimeField(auto_now_add=True)
+    is_seller = models.BooleanField(default=False)
     def __str__(self):
         return self.username
 
@@ -25,6 +26,9 @@ class Seller(models.Model):
 
     def __str__(self):
         return self.user.username
+    @property
+    def is_seller(self):
+        return True
 
 class Buyer(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='buyer_profile')

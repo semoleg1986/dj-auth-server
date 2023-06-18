@@ -5,7 +5,12 @@ from .models import Seller, Buyer, Product, Category, Order, OrderItem, User
 from graphql_jwt.shortcuts import get_token
 import channels_graphql_ws
 import channels
+# import channels.layers
+# from asgiref.sync import async_to_sync
 
+# def broadcast(group_name, payload):
+#     channel_layer = channels.layers.get_channel_layer()
+#     async_to_sync(channel_layer.group_send)(group_name, payload)
 
 class UserType(DjangoObjectType):
     class Meta:
@@ -117,42 +122,7 @@ class Query(graphene.ObjectType):
     def resolve_orders(self, info):
         return Order.objects.all()
 
-class OrderSubscription(channels_graphql_ws.Subscription):
-    class Arguments:
-        seller_id = graphene.ID(required=True)
 
-    order_status = graphene.String()
-
-    def subscribe(self, info, seller_id):
-        # Проверяем, аутентифицирован ли пользователь и является ли он продавцом с указанным идентификатором
-        user = info.context.user
-        if user.is_authenticated and user.is_seller and user.id == int(seller_id):
-            # Создание уникальной группы каналов для данного продавца
-            group_name = f'seller_{user.id}'
-            self.groups.append(group_name)
-            return [group_name]
-        return None
-
-    def publish(self, info, seller_id, payload):
-        # Извлечение данных из payload
-        order_id = payload.get('order_id')
-        new_status = payload.get('new_status')
-
-        # Отправка уведомления продавцу
-        group_name = f'seller_{info.context.user.id}'
-        self.broadcast(group_name,payload={
-            'order_id': order_id,
-            'new_status': new_status,
-        })
-
-    def unsubscribe(self, info, seller_id):
-        # Проверяем, аутентифицирован ли пользователь и является ли он продавцом с указанным идентификатором
-        user = info.context.user
-        if user.is_authenticated and user.is_seller and user.id == int(seller_id):
-            group_name = f'seller_{user.id}'
-            self.groups.remove(group_name)
-            return True
-        return False
 
 class CreateUser(graphene.Mutation):
     user = graphene.Field(UserType)
@@ -342,6 +312,7 @@ class CreateCategory(graphene.Mutation):
         category = Category(name=name)
         category.save()
         return CreateCategory(category=category)
+
 class UpdateCategory(graphene.Mutation):
     class Arguments:
         id = graphene.ID(required=True)
@@ -360,11 +331,41 @@ class DeleteCategory(graphene.Mutation):
         id = graphene.ID(required=True)
 
     success = graphene.Boolean()
-
+    def broadcast(self, group_name, payload):
+        self.broadcast(group_name, payload)
     def mutate(self, info, id):
         category = Category.objects.get(pk=id)
         category.delete()
         return DeleteCategory(success=True)
+class OrderSubscription(channels_graphql_ws.Subscription):
+    order = graphene.Field(OrderType)
+    class Arguments:
+        seller_id = graphene.ID(required=True)
+
+    order_status = graphene.String()
+    def subscribe(self, info, seller_id):
+        # Проверяем, аутентифицирован ли пользователь и является ли он продавцом с указанным идентификатором
+        user = info.context.user
+        if user.is_authenticated and user.is_seller and user.id == int(seller_id):
+            # Создание уникальной группы каналов для данного продавца
+            group_name = f'seller_{user.id}'
+            self.groups.append(group_name)
+            return [group_name]
+        return None
+
+    def publish(payload,info, seller_id):
+        return OrderSubscription(seller_id, payload)
+
+
+
+    def unsubscribe(self, info, seller_id):
+        # Проверяем, аутентифицирован ли пользователь и является ли он продавцом с указанным идентификатором
+        user = info.context.user
+        if user.is_authenticated and user.is_seller and user.id == int(seller_id):
+            group_name = f'seller_{user.id}'
+            self.groups.remove(group_name)
+            return True
+        return False
 
 class CreateOrder(graphene.Mutation):
     class Arguments:
@@ -399,7 +400,7 @@ class CreateOrder(graphene.Mutation):
             order_item = OrderItem(order=order, product=product, quantity=quantity)
             order_item.save()
 
-        OrderSubscription.broadcast(payload = {
+        OrderSubscription.broadcast(payload={
             'order_id': str(order.id),
             'new_status': order.status,
         })
