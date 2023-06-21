@@ -5,12 +5,6 @@ from .models import Seller, Buyer, Product, Category, Order, OrderItem, User
 from graphql_jwt.shortcuts import get_token
 import channels_graphql_ws
 import channels
-# import channels.layers
-# from asgiref.sync import async_to_sync
-
-# def broadcast(group_name, payload):
-#     channel_layer = channels.layers.get_channel_layer()
-#     async_to_sync(channel_layer.group_send)(group_name, payload)
 
 class UserType(DjangoObjectType):
     class Meta:
