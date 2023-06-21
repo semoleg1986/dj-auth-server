@@ -337,6 +337,7 @@ class DeleteCategory(graphene.Mutation):
         category = Category.objects.get(pk=id)
         category.delete()
         return DeleteCategory(success=True)
+        
 class OrderSubscription(channels_graphql_ws.Subscription):
     order = graphene.Field(OrderType)
     class Arguments:
