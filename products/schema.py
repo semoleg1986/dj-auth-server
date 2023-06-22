@@ -409,8 +409,6 @@ class CreateOrder(graphene.Mutation):
             'order_id': str(order.id),
             'new_status': order.status,
         })
-        # OrderSubscription.broadcast(payload=payload)
-
         return CreateOrder(order=order)
 
 class UpdateOrder(graphene.Mutation):
@@ -437,6 +435,37 @@ class UpdateOrder(graphene.Mutation):
         if status is not None:
             order.status = status
         order.save()
+        # seller_id = str(order.seller.id)
+        # new_status = order.status
+        # print(seller_id, new_status)
+        # OrderSubscription.broadcast(group=seller_id, payload={
+        #     'seller_id':seller.id,
+        #     'order_id': str(order.id),
+        #     'new_status': order.status,
+        # })
+        return UpdateOrder(order=order)
+
+class UpdateOrderStatus(graphene.Mutation):
+    class Arguments:
+        order_id = graphene.ID(required=True)
+        status = graphene.String()
+
+    order = graphene.Field(OrderType)
+
+    def mutate(self, info, order_id, status=None):
+        order = Order.objects.get(pk=order_id)
+        if status is not None:
+            order.status = status
+        order.save()
+        
+        seller_id = str(order.seller.id)
+        # new_status = order.status
+        # print(new_status)
+        OrderSubscription.broadcast(group=seller_id, payload={
+            'seller_id':seller_id,
+            'order_id': str(order.id),
+            'new_status': order.status,
+        })
         return UpdateOrder(order=order)
 
 class Mutation(graphene.ObjectType):
@@ -448,7 +477,7 @@ class Mutation(graphene.ObjectType):
     delete_category = DeleteCategory.Field()
     create_order = CreateOrder.Field()
     update_order = UpdateOrder.Field()
-    update_order_status = graphene.Field(OrderType, order_id=graphene.ID(required=True), status=graphene.String(required=True))
+    update_order_status = UpdateOrderStatus.Field()
     create_user = CreateUser.Field()
     login_user = LoginUser.Field()
     delete_user = DeleteUser.Field()
