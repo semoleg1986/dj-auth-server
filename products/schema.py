@@ -345,17 +345,20 @@ class OrderSubscription(channels_graphql_ws.Subscription):
 
     order_status = graphene.String()
     def subscribe(self, info, seller_id):
-        # Проверяем, аутентифицирован ли пользователь и является ли он продавцом с указанным идентификатором
         user = info.context.user
-        if user.is_authenticated and user.is_seller and user.id == int(seller_id):
-            # Создание уникальной группы каналов для данного продавца
-            group_name = f'seller_{user.id}'
-            self.groups.append(group_name)
-            return [group_name]
+        if user.is_authenticated and user.seller_profile.id == int(seller_id):
+            # group_name = f'seller_{user.seller_profile.id}'
+            # self.groups.append(group_name)
+            # print(seller_id)
+            return [seller_id]
         return None
 
     def publish(payload,info, seller_id):
-        return OrderSubscription(seller_id, payload)
+        user = info.context.user
+        print('auth', user.seller_profile.id)
+        if user.is_authenticated and user.seller_profile.id == int(seller_id):
+            return OrderSubscription(seller_id, payload)
+        return None
 
 
 
@@ -400,8 +403,9 @@ class CreateOrder(graphene.Mutation):
             product = Product.objects.get(pk=product_id)
             order_item = OrderItem(order=order, product=product, quantity=quantity)
             order_item.save()
-
-        OrderSubscription.broadcast(payload={
+        seller_id = str(order.seller.id)
+        OrderSubscription.broadcast(group=seller_id, payload={
+            'seller_id':seller.id,
             'order_id': str(order.id),
             'new_status': order.status,
         })
