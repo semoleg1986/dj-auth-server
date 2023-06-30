@@ -96,7 +96,7 @@ TEMPLATES = [
 # ASGI_APPLICATION = 'server.router.application'
 
 
-# WSGI_APPLICATION = "server.wsgi.application"
+WSGI_APPLICATION = "server.wsgi.application"
 
 
 # Database
